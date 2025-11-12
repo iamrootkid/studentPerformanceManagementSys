@@ -1,0 +1,9 @@
+mysql-connector-python
+matplotlib
+numpy
+Pillow
+tkinter-tooltip
+captcha
+scikit-learn
+pandas
+joblib

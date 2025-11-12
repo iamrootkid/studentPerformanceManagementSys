@@ -1,0 +1,117 @@
+Requirements Specification — Student Performance Monitoring and Analysis System
+
+1. Context and Objectives
+- Context: Desktop application (Tkinter) for schools, using a MySQL database under XAMPP.
+- Objectives:
+  - Centralize user management (administrators, teachers, students).
+  - Track academic performance (marks, subjects, trends).
+  - Provide dashboards and comparative analytics.
+
+2. Scope
+- In scope: Authentication, roles, student/teacher management, subjects, marks, dashboards (admin/teacher/student), search/filter, password reset, key statistics.
+- Out of scope (phase 1): PDF/Excel export, email notifications, multi-institution tenancy, SSO, mobile.
+
+3. Roles / Personas
+- Administrator: Manages users and master data, supervises global statistics.
+- Teacher: Views/enters marks by subject, reviews trends for classes.
+- Student: Views personal marks and trends.
+
+4. Functional Requirements
+4.1 Authentication
+- Login via username and password (SHA-256 hashed).
+- Redirect to role-based dashboard (admin/teacher/student).
+- "Forgot password": retrieve email and reset password.
+
+4.2 Administrator Dashboard
+- Stat cards: number of active students, active teachers, subjects, average marks.
+- Charts: gender distribution, performance by subject, time trends.
+- Top 3 students (based on average/estimated CGPA).
+
+4.3 Student Management
+- List: ID, Name, Email, Phone, Gender, Status, Enrollment Date.
+- Search/filter by name, email, ID.
+- Add a student (required fields):
+  - username (unique), password, fullname, email (unique), phone, date_of_birth (YYYY-MM-DD; accept DD-MM-YYYY → normalize), gender (Male/Female/Other), address, status (Active/Inactive/Graduated).
+  - Rules: username uniqueness (users), email uniqueness (students), validation of required fields, date format check.
+  - Effect: creates a user with role "student" + student profile.
+- Edit student: fullname, email, phone, date_of_birth, gender, address, status.
+- Delete student: delete student profile (cascade to marks if FK is configured).
+- View marks (dialog; placeholder acceptable in phase 1).
+
+4.4 Teacher Management
+- List: ID, Name, Email, Phone, Department, Qualification, Status.
+- Search/filter by name, email, department.
+- Add/Edit/Delete a teacher (creates a user with role "teacher").
+
+4.5 Subjects
+- List/add/edit/delete subjects: name, code, associated teacher.
+
+4.6 Marks
+- Enter/edit marks per student and subject: total_marks, marks_obtained, exam_date.
+- Calculations: averages, percentages, estimated CGPA.
+
+4.7 Teacher Dashboard
+- Performance by subject, trends, results distribution.
+
+4.8 Student Dashboard
+- Personal view: marks by subject, trends, averages.
+
+5. Non-Functional Requirements
+- Platform: Windows 10+, Python 3.x, Tkinter (GUI), MySQL via XAMPP.
+- Dependencies: mysql-connector-python, matplotlib (optional), ttk, hashlib.
+- Database: utf8mb4 charset/collation, autocommit enabled.
+- Performance: list loads < 1s for ~5k records; CRUD operations typically < 1s.
+- Security: SHA-256 password hashing, role-based access control, basic validations.
+- UX: maximized window, filterable tables, modal dialogs for CRUD.
+- Logging: clear user-facing error messages; console logs for DB errors.
+- Accessibility: readable fonts, sufficient contrast.
+
+6. Data Model (simplified)
+- users(user_id PK, username UNIQUE, password, role ENUM('admin','teacher','student'), created_at)
+- students(student_id PK, user_id FK→users, fullname, email UNIQUE, phone, date_of_birth DATE, gender ENUM('Male','Female','Other'), address, enrollment_date, status ENUM('Active','Inactive','Graduated'))
+- teachers(teacher_id PK, user_id FK→users, fullname, email UNIQUE, phone, department, qualification, hire_date, status ENUM('Active','Inactive'))
+- subjects(subject_id PK, subject_name, subject_code UNIQUE, teacher_id FK→teachers)
+- marks(mark_id PK, student_id FK→students, subject_id FK→subjects, teacher_id FK→teachers, total_marks, marks_obtained, exam_date DATE)
+
+7. Business Rules
+- Uniqueness: username (users), email (students/teachers), subject_code (subjects).
+- Deletions: if no ON DELETE CASCADE, block deleting a student when linked marks exist; otherwise cascade.
+- Statuses: only "Active" students/teachers count for specific statistics.
+- Date normalization: accept DD-MM-YYYY and convert to YYYY-MM-DD on save.
+
+8. Flows and Acceptance Criteria
+- Login: with valid credentials, user is redirected to the dashboard for their role.
+- Add student (Admin):
+  1) Admin → Manage Students → "Add Student".
+  2) Enter all required fields (accept DD-MM-YYYY format).
+  3) If username/email already exist → clear error message.
+  4) On success → confirmation message + refresh list and statistics.
+- Delete student (Admin): confirmation, delete in DB, refresh list and statistics.
+- Dashboards: show cards and charts without errors; show informative messages when no data.
+
+9. Constraints and Dependencies
+- XAMPP (MySQL) must be running; database "student_performance_db" created per database_setup.sql.
+- Offline environment acceptable (advanced charts optional if matplotlib is missing).
+
+10. Test Plan
+- Unit: DB functions (CRUD), password hashing, aggregate queries.
+- Integration: Add/Edit/Delete student/teacher flows, post-login redirections.
+- UI: field validations, modal dialogs, filters, table refresh.
+- Data: uniqueness checks, date formats, FK constraints.
+
+11. Deliverables
+- Source code, SQL scripts, requirements.txt, README, this requirements specification (TXT).
+
+12. Schedule (indicative)
+- Week 1: Data model, auth, base screens.
+- Week 2: Student/teacher management, full CRUD.
+- Week 3: Marks, basic stats, dashboards.
+- Week 4: Stabilization, testing, documentation.
+
+13. Risks
+- MySQL/XAMPP unavailability, schema misalignment, large data volumes.
+- Dependency on matplotlib for some charts (optional).
+
+14. Glossary
+- CGPA: index derived from average via bands.
+- CRUD: Create, Read, Update, Delete.
